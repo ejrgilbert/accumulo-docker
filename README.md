@@ -14,11 +14,11 @@ To obtain the docker image created by this project, you can either pull it from 
 
 While it is easier to pull from DockerHub, the image will default to the software versions below:
 
-| Software    | Version       |
-|-------------|---------------|
-| [Accumulo]  | 2.0.0         |
-| [Hadoop]    | 3.2.1         |
-| [ZooKeeper] | 3.6.0         |
+| Software    | Version        |
+|-------------|----------------|
+| [Accumulo]  | 1.9.2          |
+| [Hadoop]    | 2.6.0-cdh5.9.1 |
+| [ZooKeeper] | 3.4.5-cdh5.9.1 |
 
 If these versions do not match what is running on your cluster, you should consider building
 your own image with matching versions. However, Accumulo must be 2.0.0+. Below are instructions for
@@ -26,20 +26,23 @@ building an image:
 
 1. Clone the Accumulo docker repo
 
-        git clone git@github.com:apache/accumulo-docker.git
+        git clone git@github.com:ejrgilbert/accumulo-docker.git
 
 2. Build the default Accumulo docker image using the command below.
 
         cd /path/to/accumulo-docker
         docker build -t accumulo .
 
-   Or build the Accumulo docker image with specific released versions of Hadoop, Zookeeper, etc that will downloaded from Apache using the command below:
-
-        docker build --build-arg ZOOKEEPER_VERSION=3.4.8 --build-arg HADOOP_VERSION=2.7.0 -t accumulo .
-
    Or build with an Accumulo tarball (located in same directory as DockerFile) using the command below:
 
         docker build --build-arg ACCUMULO_VERSION=2.0.0-SNAPSHOT --build-arg ACCUMULO_FILE=accumulo-2.0.0-SNAPSHOT-bin.tar.gz -t accumulo .
+
+### CDH Versions ###
+
+To change the CDH version installed, just change the version at the end of the `baseurl` variable in the cloudera repo file.
+To upgrade to CDH 6.x, download the corresponding repo file from [Cloudera's repo page](https://docs.cloudera.com/documentation/enterprise/6/release-notes/topics/rg_cm_6_version_download.html).
+If you do this, make sure to overwrite the cdh5 repo file, otherwise the yum install will have multiple options while running
+the docker build.
 
 ## Image basics
 
@@ -58,30 +61,7 @@ docker run accumulo classpath
 
 # Run Accumulo using Docker
 
-Before you can run Accumulo services in Docker, you will need to install Accumulo, configure `accumulo.properties`,
-and initialize your instance with `--upload-accumulo-props`. This will upload configuration to Zookeeper and limit
-how much configuration needs to be set on the command line.
-
-```bash
-$ accumulo init --upload-accumulo-props
-...
-Uploading properties in accumulo.properties to Zookeeper. Properties that cannot be set in Zookeeper will be skipped:
-Skipped - instance.secret = <hidden>
-Skipped - instance.volumes = hdfs://localhost:8020/accumulo
-Skipped - instance.zookeeper.host = localhost:2181
-Uploaded - table.durability = flush
-Uploaded - tserver.memory.maps.native.enabled = false
-Uploaded - tserver.readahead.concurrent.max = 64
-Uploaded - tserver.server.threads.minimum = 64
-Uploaded - tserver.walog.max.size = 512M
-```
-
-Any configuration that is skipped above will need to be passed in as a command line option to Accumulo services running
-in Docker containers. These options can be set in an environment variable which is used in later commands.
-
-```
-export ACCUMULO_CL_OPTS="-o instance.secret=mysecret -o instance.volumes=hdfs://localhost:8020/accumulo -o instance.zookeeper.host=localhost:2181"
-```
+Before you can run Accumulo services in Docker, you will need to configure `accumulo-site.xml`.
 
 The Accumulo docker image expects that the HDFS path set by `instance.volumes` is owned by the `accumulo` user. This
 can be accomplished by running the command below (replace the HDFS path with yours):
